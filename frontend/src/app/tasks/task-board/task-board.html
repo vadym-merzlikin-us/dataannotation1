@@ -1,0 +1,60 @@
+<section class="composer">
+  <h2>New sample</h2>
+  <form (ngSubmit)="submit()">
+    <textarea
+      name="text"
+      rows="3"
+      placeholder="Paste the text to be annotated…"
+      [ngModel]="draft()"
+      (ngModelChange)="draft.set($event)"
+    ></textarea>
+    <button type="submit" [disabled]="!draft().trim()">Add to queue</button>
+  </form>
+</section>
+
+@if (service.error(); as error) {
+  <p class="error" role="alert">{{ error }}</p>
+}
+
+<section class="queue">
+  <h2>Pending <span class="count">{{ service.pending().length }}</span></h2>
+
+  @if (service.loading()) {
+    <p class="muted">Loading…</p>
+  } @else if (service.pending().length === 0) {
+    <p class="muted">Queue is empty. Nice work.</p>
+  }
+
+  @for (task of service.pending(); track task.id) {
+    <article class="card">
+      <p class="text">{{ task.text }}</p>
+      <footer>
+        <div class="labels">
+          @for (option of labels; track option) {
+            <button type="button" class="label {{ option }}" (click)="label(task.id, option)">
+              {{ option }}
+            </button>
+          }
+        </div>
+        <button type="button" class="link" (click)="remove(task.id)">Discard</button>
+      </footer>
+    </article>
+  }
+</section>
+
+<section class="done">
+  <h2>Labelled <span class="count">{{ service.labelled().length }}</span></h2>
+
+  @for (task of service.labelled(); track task.id) {
+    <article class="card labelled">
+      <p class="text">{{ task.text }}</p>
+      <footer>
+        <span class="badge {{ task.label }}">{{ task.label }}</span>
+        <time class="muted">{{ task.labelledAt | date: 'short' }}</time>
+        <button type="button" class="link" (click)="remove(task.id)">Delete</button>
+      </footer>
+    </article>
+  } @empty {
+    <p class="muted">Nothing labelled yet.</p>
+  }
+</section>

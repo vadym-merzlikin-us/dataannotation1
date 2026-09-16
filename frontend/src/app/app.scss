@@ -1,0 +1,56 @@
+.app-header {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+
+  .inner {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 76rem;
+    margin: 0 auto;
+    padding: 1.25rem 1rem;
+  }
+
+  nav {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  nav a {
+    padding: 0.35rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+
+    &:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    &.active {
+      color: var(--text);
+      background: var(--surface-2);
+      border-color: var(--accent);
+    }
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.35rem;
+    letter-spacing: -0.01em;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+}
+
+main {
+  padding: 0 1rem 3rem;
+}

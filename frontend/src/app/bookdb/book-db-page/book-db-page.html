@@ -1,0 +1,178 @@
+@if (error(); as message) {
+  <p class="error" role="alert">{{ message }}</p>
+}
+
+<div class="panels">
+  <!-- Authors -->
+  <section class="panel">
+    <header>
+      <h2>Authors</h2>
+      <button type="button" class="primary" (click)="addAuthor()">Add author</button>
+    </header>
+
+    <div class="rows">
+      @if (loadingAuthors()) {
+        <p class="muted">Loading…</p>
+      } @else {
+        @for (author of authors().content; track author.id) {
+          <button
+            type="button"
+            class="row"
+            [class.selected]="author.id === selectedAuthorId()"
+            (click)="selectAuthor(author)"
+          >
+            <span class="primary-text">{{ authorName(author) }}</span>
+            @if (author.description) {
+              <span class="secondary-text">{{ author.description }}</span>
+            }
+          </button>
+        } @empty {
+          <p class="muted">No authors yet.</p>
+        }
+      }
+    </div>
+
+    <app-paginator
+      [page]="authors().page"
+      [totalPages]="authors().totalPages"
+      [totalElements]="authors().totalElements"
+      [disabled]="loadingAuthors()"
+      (pageChange)="loadAuthors($event)"
+    />
+  </section>
+
+  <!-- Books of the selected author -->
+  <section class="panel">
+    <header>
+      <h2>Books</h2>
+      <button
+        type="button"
+        class="primary"
+        (click)="addBook()"
+        [disabled]="selectedAuthorId() === null"
+      >
+        Add book
+      </button>
+    </header>
+
+    <div class="rows">
+      @if (selectedAuthorId() === null) {
+        <p class="muted">Select an author to see their books.</p>
+      } @else if (loadingBooks()) {
+        <p class="muted">Loading…</p>
+      } @else {
+        @for (book of books().content; track book.id) {
+          <button
+            type="button"
+            class="row"
+            [class.selected]="book.id === selectedBookId()"
+            (click)="selectBook(book)"
+          >
+            <span class="primary-text">{{ book.name }}</span>
+            @if (book.description) {
+              <span class="secondary-text">{{ book.description }}</span>
+            }
+          </button>
+        } @empty {
+          <p class="muted">This author has no books yet.</p>
+        }
+      }
+    </div>
+
+    <app-paginator
+      [page]="books().page"
+      [totalPages]="books().totalPages"
+      [totalElements]="books().totalElements"
+      [disabled]="loadingBooks() || selectedAuthorId() === null"
+      (pageChange)="loadBooks($event)"
+    />
+  </section>
+</div>
+
+<!-- Detail editors -->
+<div class="editors">
+  <app-collapsible
+    title="Author details"
+    [expanded]="authorFormOpen()"
+    (expandedChange)="authorFormOpen.set($event)"
+  >
+    @if (authorDraft(); as draft) {
+      <form class="form" (ngSubmit)="saveAuthor()">
+        <label>
+          First name
+          <input
+            name="firstName"
+            required
+            [ngModel]="draft.firstName"
+            (ngModelChange)="updateAuthorDraft({ firstName: $event })"
+          />
+        </label>
+        <label>
+          Second name
+          <input
+            name="secondName"
+            required
+            [ngModel]="draft.secondName"
+            (ngModelChange)="updateAuthorDraft({ secondName: $event })"
+          />
+        </label>
+        <label class="wide">
+          Description
+          <textarea
+            name="description"
+            rows="3"
+            [ngModel]="draft.description"
+            (ngModelChange)="updateAuthorDraft({ description: $event })"
+          ></textarea>
+        </label>
+        <div class="actions">
+          <button
+            type="submit"
+            class="primary"
+            [disabled]="saving() || !draft.firstName.trim() || !draft.secondName.trim()"
+          >
+            {{ draft.id === null ? 'Create author' : 'Save changes' }}
+          </button>
+        </div>
+      </form>
+    } @else {
+      <p class="muted">Select an author, or use “Add author”.</p>
+    }
+  </app-collapsible>
+
+  <app-collapsible
+    title="Book details"
+    [expanded]="bookFormOpen()"
+    (expandedChange)="bookFormOpen.set($event)"
+  >
+    @if (bookDraft(); as draft) {
+      <form class="form" (ngSubmit)="saveBook()">
+        <label class="wide">
+          Name
+          <input
+            name="name"
+            required
+            [ngModel]="draft.name"
+            (ngModelChange)="updateBookDraft({ name: $event })"
+          />
+        </label>
+        <label class="wide">
+          Short description
+          <textarea
+            name="bookDescription"
+            rows="3"
+            [ngModel]="draft.description"
+            (ngModelChange)="updateBookDraft({ description: $event })"
+          ></textarea>
+        </label>
+        <div class="actions">
+          <button type="submit" class="primary" [disabled]="saving() || !draft.name.trim()">
+            {{ draft.id === null ? 'Create book' : 'Save changes' }}
+          </button>
+        </div>
+      </form>
+    } @else {
+      <p class="muted">Select a book, or use “Add book”.</p>
+    }
+  </app-collapsible>
+</div>

@@ -1,0 +1,20 @@
+# Java / Gradle
+backend/.gradle/
+backend/build/
+backend/bin/
+backend/out/
+
+# Node / Angular
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/
+npm-debug.log*
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db

@@ -1,0 +1,61 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.5'
+    id 'io.spring.dependency-management' version '1.1.6'
+}
+
+group = 'com.codejunk'
+version = '0.0.1-SNAPSHOT'
+description = 'CodeJunk backend API'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.flywaydb:flyway-core'
+    implementation 'org.flywaydb:flyway-database-postgresql'
+    runtimeOnly 'org.postgresql:postgresql'
+
+    // Boot 3.3.5 pins Testcontainers 1.19.8, which cannot talk to Docker Desktop's
+    // newer docker_engine redirect stub. Override the whole family together.
+    testImplementation platform('org.testcontainers:testcontainers-bom:1.21.3')
+
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+
+    // Docker Desktop on Windows still publishes \\.\pipe\docker_engine, but it is only
+    // a redirect stub. The docker CLI follows that hint, Testcontainers does not, so
+    // point it at the Linux engine pipe directly. No effect on Linux/CI or when the
+    // caller already set DOCKER_HOST.
+    if (System.getenv('DOCKER_HOST') == null
+            && System.getProperty('os.name').toLowerCase().contains('windows')) {
+        environment 'DOCKER_HOST', 'npipe:////./pipe/dockerDesktopLinuxEngine'
+    }
+
+    // Docker Engine 29 rejects the unversioned request docker-java sends by default
+    // (HTTP 400). docker-java reads this as a system property, not an env var.
+    // 1.41 is above the engine's 1.40 floor and old enough to stay portable.
+    systemProperty 'api.version', System.getProperty('api.version', '1.41')
+}
+
+tasks.named('bootJar') {
+    archiveFileName = 'app.jar'
+}

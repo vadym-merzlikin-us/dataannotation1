@@ -1,0 +1,15 @@
+* text=auto eol=lf
+
+# Must stay LF: it runs as /bin/sh inside the backend build image.
+backend/gradlew text eol=lf
+*.sh text eol=lf
+
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+*.jar binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.woff binary
+*.woff2 binary

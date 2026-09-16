@@ -1,0 +1,35 @@
+<nav class="paginator" [attr.aria-label]="label()">
+  <button type="button" (click)="go(0)" [disabled]="disabled() || first()" aria-label="First page">
+    «
+  </button>
+  <button
+    type="button"
+    (click)="go(page() - 1)"
+    [disabled]="disabled() || first()"
+    aria-label="Previous page"
+  >
+    ‹
+  </button>
+
+  <span class="status">
+    {{ label() }}
+    <small>{{ totalElements() }} total</small>
+  </span>
+
+  <button
+    type="button"
+    (click)="go(page() + 1)"
+    [disabled]="disabled() || last()"
+    aria-label="Next page"
+  >
+    ›
+  </button>
+  <button
+    type="button"
+    (click)="go(totalPages() - 1)"
+    [disabled]="disabled() || last()"
+    aria-label="Last page"
+  >
+    »
+  </button>
+</nav>

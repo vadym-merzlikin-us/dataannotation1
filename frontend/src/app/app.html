@@ -1,0 +1,17 @@
+<header class="app-header">
+  <div class="inner">
+    <div>
+      <h1>{{ title() }}</h1>
+      <p>Authors, books and the annotation queue.</p>
+    </div>
+
+    <nav>
+      <a routerLink="/books" routerLinkActive="active">Books</a>
+      <a routerLink="/queue" routerLinkActive="active">Queue</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <router-outlet />
+</main>

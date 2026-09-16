@@ -1,0 +1,69 @@
+name: codejunk
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: codejunk-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-codejunk}
+      POSTGRES_USER: ${POSTGRES_USER:-codejunk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-codejunk}
+    ports:
+      - "${DB_PORT:-5433}:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-codejunk} -d ${POSTGRES_DB:-codejunk}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+    image: codejunk-backend:latest
+    container_name: codejunk-backend
+    environment:
+      # nginx proxies /api, so the browser is same-origin and CORS is off.
+      APP_CORS_ALLOWED_ORIGINS: ""
+      JAVA_TOOL_OPTIONS: "-XX:MaxRAMPercentage=75.0"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-codejunk}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-codejunk}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-codejunk}
+    ports:
+      - "${BACKEND_PORT:-8090}:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      # 127.0.0.1, not localhost: that resolves to ::1 first and nothing listens there.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1:8080/actuator/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    image: codejunk-frontend:latest
+    container_name: codejunk-frontend
+    ports:
+      - "${FRONTEND_PORT:-4600}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      # nginx only listens on IPv4, and localhost resolves to ::1 first.
+      test: ["CMD", "wget", "--spider", "-q", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+volumes:
+  db-data:
