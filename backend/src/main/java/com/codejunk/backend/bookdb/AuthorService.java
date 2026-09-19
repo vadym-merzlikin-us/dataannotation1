@@ -45,7 +45,7 @@ public class AuthorService {
 
     @Transactional
     public AuthorDto update(Long id, AuthorRequest request) {
-        Author author = authors.findById(id).orElseThrow(() -> notFound(id));
+        Author author = authors.findByIdForUpdate(id).orElseThrow(() -> notFound(id));
         if (!author.getVersion().equals(request.version())) {
             throw new VersionConflictException(
                     "Author version conflict: expected " + request.version() + ", but current is " + author.getVersion());
@@ -59,6 +59,11 @@ public class AuthorService {
 
     Author reference(Long id) {
         return authors.findById(id).orElseThrow(() -> notFound(id));
+    }
+
+    /** For callers that are about to change the author, not just point at it. */
+    Author referenceForUpdate(Long id) {
+        return authors.findByIdForUpdate(id).orElseThrow(() -> notFound(id));
     }
 
     private static NotFoundException notFound(Long id) {

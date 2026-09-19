@@ -46,7 +46,7 @@ public class BookService {
         if (request.version() != 0L) {
             throw new VersionConflictException("New book must have version 0, got " + request.version());
         }
-        Author author = authorService.reference(request.authorId());
+        Author author = authorService.referenceForUpdate(request.authorId());
         Book book = new Book(
                 request.name().trim(),
                 trimToNull(request.description()),
@@ -58,16 +58,18 @@ public class BookService {
 
     @Transactional
     public BookDto update(Long id, BookRequest request) {
-        Book book = books.findById(id).orElseThrow(() -> notFound(id));
+        Book book = books.findByIdForUpdate(id).orElseThrow(() -> notFound(id));
         if (!book.getVersion().equals(request.version())) {
             throw new VersionConflictException(
                     "Book version conflict: expected " + request.version() + ", but current is " + book.getVersion());
         }
         book.setName(request.name().trim());
         book.setDescription(trimToNull(request.description()));
-        Author author = book.getAuthor();
-        if (!author.getId().equals(request.authorId())) {
-            author = authorService.reference(request.authorId());
+        // Locked as well: this edit bumps the author's version, so a concurrent
+        // edit of another book by the same author must not read it first.
+        // Always book then author, so two edits cannot deadlock on the pair.
+        Author author = authorService.referenceForUpdate(request.authorId());
+        if (!book.getAuthor().getId().equals(author.getId())) {
             book.setAuthor(author);
         }
         book.incrementVersion();
