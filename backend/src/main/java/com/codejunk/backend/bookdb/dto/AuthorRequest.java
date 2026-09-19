@@ -1,6 +1,7 @@
 package com.codejunk.backend.bookdb.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 public record AuthorRequest(
