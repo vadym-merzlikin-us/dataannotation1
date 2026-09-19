@@ -24,6 +24,9 @@ public class Author {
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
+
     protected Author() {
         // for JPA
     }
@@ -60,5 +63,17 @@ public class Author {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
+    public void incrementVersion() {
+        this.version++;
     }
 }

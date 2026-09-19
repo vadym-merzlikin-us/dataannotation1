@@ -4,6 +4,7 @@ import com.codejunk.backend.bookdb.dto.BookDto;
 import com.codejunk.backend.bookdb.dto.BookRequest;
 import com.codejunk.backend.bookdb.dto.PageResponse;
 import com.codejunk.backend.web.NotFoundException;
+import com.codejunk.backend.web.VersionConflictException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -42,21 +43,35 @@ public class BookService {
 
     @Transactional
     public BookDto create(BookRequest request) {
+        if (request.version() != 0L) {
+            throw new VersionConflictException("New book must have version 0, got " + request.version());
+        }
+        Author author = authorService.reference(request.authorId());
         Book book = new Book(
                 request.name().trim(),
                 trimToNull(request.description()),
-                authorService.reference(request.authorId()));
-        return BookDto.of(books.save(book));
+                author);
+        books.save(book);
+        author.incrementVersion();
+        return BookDto.of(book);
     }
 
     @Transactional
     public BookDto update(Long id, BookRequest request) {
         Book book = books.findById(id).orElseThrow(() -> notFound(id));
+        if (!book.getVersion().equals(request.version())) {
+            throw new VersionConflictException(
+                    "Book version conflict: expected " + request.version() + ", but current is " + book.getVersion());
+        }
         book.setName(request.name().trim());
         book.setDescription(trimToNull(request.description()));
-        if (!book.getAuthor().getId().equals(request.authorId())) {
-            book.setAuthor(authorService.reference(request.authorId()));
+        Author author = book.getAuthor();
+        if (!author.getId().equals(request.authorId())) {
+            author = authorService.reference(request.authorId());
+            book.setAuthor(author);
         }
+        book.incrementVersion();
+        author.incrementVersion();
         return BookDto.of(book);
     }
 

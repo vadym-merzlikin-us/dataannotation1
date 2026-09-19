@@ -2,6 +2,17 @@
   <p class="error" role="alert">{{ message }}</p>
 }
 
+@if (conflictError(); as message) {
+  <div class="dialog-backdrop" (click)="closeConflictDialog()">
+    <div class="dialog" (click)="$event.stopPropagation()" role="alertdialog">
+      <h3>Version Conflict</h3>
+      <p>{{ message }}</p>
+      <p>The data has been modified by another user. Please reload and try again.</p>
+      <button type="button" class="primary" (click)="closeConflictDialog()">OK</button>
+    </div>
+  </div>
+}
+
 <div class="panels">
   <!-- Authors -->
   <section class="panel">
@@ -21,7 +32,7 @@
             [class.selected]="author.id === selectedAuthorId()"
             (click)="selectAuthor(author)"
           >
-            <span class="primary-text">{{ authorName(author) }}</span>
+            <span class="primary-text">{{ authorName(author) }} (v{{ author.version }})</span>
             @if (author.description) {
               <span class="secondary-text">{{ author.description }}</span>
             }
@@ -68,7 +79,7 @@
             [class.selected]="book.id === selectedBookId()"
             (click)="selectBook(book)"
           >
-            <span class="primary-text">{{ book.name }}</span>
+            <span class="primary-text">{{ book.name }} (v{{ book.version }})</span>
             @if (book.description) {
               <span class="secondary-text">{{ book.description }}</span>
             }

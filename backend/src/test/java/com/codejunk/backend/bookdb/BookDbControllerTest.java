@@ -68,9 +68,10 @@ class BookDbControllerTest {
         String body = mockMvc.perform(post("/api/bookdb/authors")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"firstName":"Ursula","secondName":"Le Guin","description":"Added by test"}"""))
+                                {"firstName":"Ursula","secondName":"Le Guin","description":"Added by test","version":0}"""))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.firstName").value("Ursula"))
+                .andExpect(jsonPath("$.version").value(0))
                 .andReturn().getResponse().getContentAsString();
 
         Integer id = JsonPath.read(body, "$.id");
@@ -78,10 +79,11 @@ class BookDbControllerTest {
         mockMvc.perform(put("/api/bookdb/authors/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"firstName":"Ursula K.","secondName":"Le Guin","description":"Edited"}"""))
+                                {"firstName":"Ursula K.","secondName":"Le Guin","description":"Edited","version":0}"""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.firstName").value("Ursula K."))
-                .andExpect(jsonPath("$.description").value("Edited"));
+                .andExpect(jsonPath("$.description").value("Edited"))
+                .andExpect(jsonPath("$.version").value(1));
     }
 
     @Test
@@ -90,25 +92,27 @@ class BookDbControllerTest {
 
         String body = mockMvc.perform(post("/api/bookdb/books")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"A Wizard of Earthsea\",\"description\":\"d\",\"authorId\":" + authorId + "}"))
+                        .content("{\"name\":\"A Wizard of Earthsea\",\"description\":\"d\",\"authorId\":" + authorId + ",\"version\":0}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.authorId").value(authorId))
+                .andExpect(jsonPath("$.version").value(0))
                 .andReturn().getResponse().getContentAsString();
 
         Integer id = JsonPath.read(body, "$.id");
 
         mockMvc.perform(put("/api/bookdb/books/" + id)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"The Tombs of Atuan\",\"description\":\"d2\",\"authorId\":" + authorId + "}"))
+                        .content("{\"name\":\"The Tombs of Atuan\",\"description\":\"d2\",\"authorId\":" + authorId + ",\"version\":0}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("The Tombs of Atuan"));
+                .andExpect(jsonPath("$.name").value("The Tombs of Atuan"))
+                .andExpect(jsonPath("$.version").value(1));
     }
 
     @Test
     void rejectsABookWithoutAName() throws Exception {
         mockMvc.perform(post("/api/bookdb/books")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"name\":\"  \",\"authorId\":" + firstAuthorId() + "}"))
+                        .content("{\"name\":\"  \",\"authorId\":" + firstAuthorId() + ",\"version\":0}"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -116,6 +120,85 @@ class BookDbControllerTest {
     void reportsAMissingAuthor() throws Exception {
         mockMvc.perform(get("/api/bookdb/authors/999999"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void rejectsVersionConflictOnAuthorUpdate() throws Exception {
+        String body = mockMvc.perform(post("/api/bookdb/authors")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Test","secondName":"Author","description":"","version":0}"""))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        Integer id = JsonPath.read(body, "$.id");
+
+        mockMvc.perform(put("/api/bookdb/authors/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Test","secondName":"Author Updated","description":"","version":0}"""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(1));
+
+        mockMvc.perform(put("/api/bookdb/authors/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Test","secondName":"Author Conflict","description":"","version":0}"""))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void rejectsVersionConflictOnBookUpdate() throws Exception {
+        Long authorId = firstAuthorId();
+
+        String body = mockMvc.perform(post("/api/bookdb/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Test Book\",\"description\":\"d\",\"authorId\":" + authorId + ",\"version\":0}"))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        Integer id = JsonPath.read(body, "$.id");
+
+        mockMvc.perform(put("/api/bookdb/books/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Test Book Updated\",\"description\":\"d2\",\"authorId\":" + authorId + ",\"version\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(1));
+
+        mockMvc.perform(put("/api/bookdb/books/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Test Book Conflict\",\"description\":\"d3\",\"authorId\":" + authorId + ",\"version\":0}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void rejectsNewAuthorWithNonZeroVersion() throws Exception {
+        mockMvc.perform(post("/api/bookdb/authors")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Test","secondName":"Author","description":"","version":5}"""))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void bookCreationIncrementsAuthorVersion() throws Exception {
+        String authorBody = mockMvc.perform(post("/api/bookdb/authors")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"firstName":"Test","secondName":"Author","description":"","version":0}"""))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        Integer authorId = JsonPath.read(authorBody, "$.id");
+
+        mockMvc.perform(post("/api/bookdb/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Test Book\",\"description\":\"d\",\"authorId\":" + authorId + ",\"version\":0}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/bookdb/authors/" + authorId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(1));
     }
 
     @Test

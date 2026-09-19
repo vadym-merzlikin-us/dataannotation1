@@ -28,6 +28,9 @@ public class Book {
     @JoinColumn(name = "author_id", nullable = false)
     private Author author;
 
+    @Column(name = "version", nullable = false)
+    private Long version = 0L;
+
     protected Book() {
         // for JPA
     }
@@ -64,5 +67,17 @@ public class Book {
 
     public void setAuthor(Author author) {
         this.author = author;
+    }
+
+    public Long getVersion() {
+        return version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
+    }
+
+    public void incrementVersion() {
+        this.version++;
     }
 }

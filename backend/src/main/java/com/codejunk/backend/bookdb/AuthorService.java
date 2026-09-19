@@ -4,6 +4,7 @@ import com.codejunk.backend.bookdb.dto.AuthorDto;
 import com.codejunk.backend.bookdb.dto.AuthorRequest;
 import com.codejunk.backend.bookdb.dto.PageResponse;
 import com.codejunk.backend.web.NotFoundException;
+import com.codejunk.backend.web.VersionConflictException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +33,9 @@ public class AuthorService {
 
     @Transactional
     public AuthorDto create(AuthorRequest request) {
+        if (request.version() != 0L) {
+            throw new VersionConflictException("New author must have version 0, got " + request.version());
+        }
         Author author = new Author(
                 request.firstName().trim(),
                 request.secondName().trim(),
@@ -42,9 +46,14 @@ public class AuthorService {
     @Transactional
     public AuthorDto update(Long id, AuthorRequest request) {
         Author author = authors.findById(id).orElseThrow(() -> notFound(id));
+        if (!author.getVersion().equals(request.version())) {
+            throw new VersionConflictException(
+                    "Author version conflict: expected " + request.version() + ", but current is " + author.getVersion());
+        }
         author.setFirstName(request.firstName().trim());
         author.setSecondName(request.secondName().trim());
         author.setDescription(trimToNull(request.description()));
+        author.incrementVersion();
         return AuthorDto.of(author);
     }
 

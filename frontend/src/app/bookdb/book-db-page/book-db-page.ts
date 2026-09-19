@@ -12,6 +12,7 @@ interface AuthorDraft {
   firstName: string;
   secondName: string;
   description: string;
+  version: number;
 }
 
 interface BookDraft {
@@ -19,6 +20,7 @@ interface BookDraft {
   name: string;
   description: string;
   authorId: number | null;
+  version: number;
 }
 
 @Component({
@@ -46,6 +48,7 @@ export class BookDbPage implements OnInit {
   protected readonly loadingBooks = signal(false);
   protected readonly saving = signal(false);
   protected readonly error = signal<string | null>(null);
+  protected readonly conflictError = signal<string | null>(null);
 
   ngOnInit(): void {
     this.loadAuthors(0);
@@ -75,6 +78,7 @@ export class BookDbPage implements OnInit {
       firstName: author.firstName,
       secondName: author.secondName,
       description: author.description ?? '',
+      version: author.version,
     });
     this.authorFormOpen.set(true);
     this.bookFormOpen.set(false);
@@ -83,7 +87,7 @@ export class BookDbPage implements OnInit {
   }
 
   protected addAuthor(): void {
-    this.authorDraft.set({ id: null, firstName: '', secondName: '', description: '' });
+    this.authorDraft.set({ id: null, firstName: '', secondName: '', description: '', version: 0 });
     this.authorFormOpen.set(true);
     this.bookFormOpen.set(false);
   }
@@ -116,6 +120,7 @@ export class BookDbPage implements OnInit {
       name: book.name,
       description: book.description ?? '',
       authorId: book.authorId,
+      version: book.version,
     });
     this.bookFormOpen.set(true);
     this.authorFormOpen.set(false);
@@ -127,7 +132,7 @@ export class BookDbPage implements OnInit {
       return;
     }
     this.selectedBookId.set(null);
-    this.bookDraft.set({ id: null, name: '', description: '', authorId });
+    this.bookDraft.set({ id: null, name: '', description: '', authorId, version: 0 });
     this.bookFormOpen.set(true);
     this.authorFormOpen.set(false);
   }
@@ -143,6 +148,7 @@ export class BookDbPage implements OnInit {
       firstName: draft.firstName.trim(),
       secondName: draft.secondName.trim(),
       description: draft.description.trim(),
+      version: draft.version,
     };
 
     this.saving.set(true);
@@ -162,6 +168,7 @@ export class BookDbPage implements OnInit {
           firstName: author.firstName,
           secondName: author.secondName,
           description: author.description ?? '',
+          version: author.version,
         });
         if (draft.id === null) {
           this.loadBooks(0);
@@ -180,6 +187,7 @@ export class BookDbPage implements OnInit {
       name: draft.name.trim(),
       description: draft.description.trim(),
       authorId: draft.authorId,
+      version: draft.version,
     };
 
     this.saving.set(true);
@@ -196,6 +204,7 @@ export class BookDbPage implements OnInit {
           name: book.name,
           description: book.description ?? '',
           authorId: book.authorId,
+          version: book.version,
         });
         this.loadBooks(this.books().page);
       },
@@ -228,8 +237,17 @@ export class BookDbPage implements OnInit {
     return Math.max(0, this.authors().totalPages - 1);
   }
 
+  protected closeConflictDialog(): void {
+    this.conflictError.set(null);
+  }
+
   private fail(err: HttpErrorResponse, cleanup: () => void): void {
     cleanup();
-    this.error.set(err.error?.detail ?? err.message ?? 'Request failed');
+    const errorDetail = err.error?.detail ?? err.message ?? 'Request failed';
+    if (err.status === 409) {
+      this.conflictError.set(errorDetail);
+    } else {
+      this.error.set(errorDetail);
+    }
   }
 }

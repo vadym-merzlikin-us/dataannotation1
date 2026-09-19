@@ -165,3 +165,44 @@ button.primary {
   border-radius: 0.5rem;
   color: var(--danger);
 }
+
+.dialog-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  max-width: 28rem;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+
+  h3 {
+    margin: 0 0 1rem;
+    color: var(--danger);
+  }
+
+  p {
+    margin: 0 0 0.75rem;
+    color: var(--text);
+
+    &:last-of-type {
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  button {
+    width: 100%;
+  }
+}

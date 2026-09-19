@@ -3,6 +3,7 @@ export interface Author {
   firstName: string;
   secondName: string;
   description?: string;
+  version: number;
 }
 
 export interface Book {
@@ -10,6 +11,7 @@ export interface Book {
   name: string;
   description?: string;
   authorId: number;
+  version: number;
 }
 
 export interface PageResponse<T> {
@@ -24,12 +26,14 @@ export interface AuthorRequest {
   firstName: string;
   secondName: string;
   description?: string;
+  version: number;
 }
 
 export interface BookRequest {
   name: string;
   description?: string;
   authorId: number;
+  version: number;
 }
 
 export const PAGE_SIZE = 20;
